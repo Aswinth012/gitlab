@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build, Push Docker Image, and Deploy to EC2
 
 on:
   push:
@@ -10,23 +10,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # Build and tag Docker image
       - name: Build and tag Docker image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/my-app:latest .
 
+      # Push Docker image to Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/my-app:latest
 
-      
+      # SSH into EC2 instance and deploy the Docker container
+      - name: Deploy Docker container to EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+        run: |
+          # Create the .ssh directory if it doesn't exist
+          mkdir -p ~/.ssh
 
+          # Write the private key to a file
+          echo "${PRIVATE_KEY}" | base64 -d > ~/.ssh/private_key.pem
+          chmod 600 ~/.ssh/private_key.pem
 
+          # Add the EC2 server to known hosts
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+          # SSH into the EC2 instance and deploy the Docker container
+          ssh -i ~/.ssh/private_key.pem -o StrictHostKeyChecking=no $USER@$HOST << EOF
+            # Pull the Docker image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:latest
+
+            # Stop and remove any existing container
+            docker stop my-app || true
+            docker rm my-app || true
+
+            # Run the Docker container
+            docker run -d --name my-app -p 80:3000 ${{ secrets.DOCKER_USERNAME }}/my-app:latest
+          EOF
