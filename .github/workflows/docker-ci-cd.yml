@@ -27,21 +27,6 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/my-app:latest
 
-      - name: Deploy Docker container to EC2
-        env:
-          HOST: ${{ secrets.EC2_HOST }}
-          USER: ${{ secrets.EC2_USER }}
-          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "${PRIVATE_KEY}" > ~/.ssh/private_key.pem
-          chmod 600 ~/.ssh/private_key.pem  # Set proper file permissions
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/private_key.pem -o StrictHostKeyChecking=no $USER@$HOST << EOF
-          docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:latest
-          docker stop my-app || true
-          docker rm my-app || true
-          docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:latest
-          EOF
+      
 
 
