@@ -45,7 +45,7 @@ jobs:
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
           ssh -i ~/.ssh/private_key.pem -o StrictHostKeyChecking=no $USER@$HOST << EOF
           docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:latest
-          docker stop $(docker ps) 
-          docker rm $(docker ps -a) 
+          docker stop my-app
+          docker rm my-app
           docker run -d --name my-app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/my-app:latest
           EOF
