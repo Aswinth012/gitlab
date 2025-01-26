@@ -26,11 +26,11 @@ jobs:
         with:
           context: .
           push: true
-          tags: your-dockerhub-username/your-image-name:latest
+          tags: shaikmustafa/gitlab:latest
 
   deploy:
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Deploy to EC2
